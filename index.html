@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self'; script-src 'self'">
+  <title>Wiveru</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="hover-zone">
+    <div id="island" class="collapsed">
+      <!-- Свернутое состояние -->
+      <div id="compact" class="compact">
+        <span id="compact-time">--:--</span>
+      </div>
+
+      <!-- Развернутое состояние -->
+      <div id="expanded" class="expanded">
+        <div class="icon-row">
+          <div class="icon-tile"></div>
+          <div class="icon-tile"></div>
+          <div class="icon-tile"></div>
+        </div>
+        <div class="main-row">
+          <div id="big-time">--:--</div>
+          <div class="media">
+            <div class="media-title">Нет трека</div>
+            <div class="media-sub">media</div>
+            <div class="media-controls">
+              <button class="media-btn" data-cmd="previous" title="Предыдущий">⏮</button>
+              <button class="media-btn" id="play-pause" data-cmd="toggle" title="Пауза/Пуск">▶</button>
+              <button class="media-btn" data-cmd="next" title="Следующий">⏭</button>
+            </div>
+          </div>
+        </div>
+        <div id="uptime">ПК работает: 0 ч 0 мин</div>
+        <div class="brand">Wiveru</div>
+      </div>
+    </div>
+  </div>
+  <script src="script.js"></script>
+</body>
+</html>

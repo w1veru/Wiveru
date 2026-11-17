@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "allow": [
+      "Exec(dir)",
+      "Exec(npm install)",
+      "Exec(where node)",
+      "Exec(powershell)",
+      "Exec(Get-Command)",
+      "Exec(Get-ChildItem)",
+      "Exec(winget)",
+      "Exec(Select-Object)",
+      "Exec(Test-Path)",
+      "Exec('C:\\Program Files\\nodejs;')",
+      "Exec(ls)",
+      "Exec(cat)",
+      "Exec(node)",
+      "Exec(env)",
+      "Exec(grep)",
+      "Exec(find)",
+      "Exec(file)",
+      "Exec(Expand-Archive)"
+    ]
+  }
+}
