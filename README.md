@@ -32,7 +32,7 @@ Dynamic Island для Windows в стиле «пилюли» — всегда в
 ### 1. Клонирование
 
 ```bash
-git clone https://github.com/<твой-ник>/wiveru.git
+git clone https://github.com/w1veru/Wiveru.git
 cd wiveru
 ```
 
