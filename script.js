@@ -555,9 +555,13 @@ function init() {
       copy.title = 'Копировать';
       copy.addEventListener('click', (e) => {
         e.stopPropagation();
-        navigator.clipboard.writeText(state.raw);
-        copy.textContent = '✓';
-        setTimeout(() => { copy.textContent = '📋'; }, 1200);
+        ipcRenderer.invoke('clipboard-write', state.raw).then((ok) => {
+          copy.textContent = ok ? '✓' : '✗';
+          setTimeout(() => { copy.textContent = '📋'; }, 1200);
+        }).catch(() => {
+          copy.textContent = '✗';
+          setTimeout(() => { copy.textContent = '📋'; }, 1200);
+        });
       });
 
       actions.appendChild(regen);
@@ -616,7 +620,17 @@ function init() {
   }
 
   async function regenerate() {
-    if (aiBusy || !lastQuestion || !lastAiMsg) return;
+    if (aiBusy) return;
+    if (!lastQuestion || !lastAiMsg) {
+      const users = chatLog.querySelectorAll('.chat-msg.user');
+      if (!users.length) return;
+      lastQuestion = users[users.length - 1].textContent;
+      const ais = chatLog.querySelectorAll('.chat-msg.ai, .chat-msg.error');
+      if (ais.length) {
+        // пересоздаём msg-объект для последнего ai-сообщения нельзя — используем последний живой
+      }
+    }
+    if (!lastAiMsg) return;
     lastAiMsg.div.className = 'chat-msg ai';
     lastAiMsg.body.innerHTML = '…';
     await askAI(lastQuestion, lastAiMsg);

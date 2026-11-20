@@ -1295,4 +1295,6 @@ app.on('window-all-closed', () => {
 
 app.on('will-quit', () => {
   globalShortcut.unregisterAll();
+  try { if (sttProc) sttProc.kill(); } catch {}
+  try { if (volDuckProc) volDuckProc.kill(); } catch {}
 });
