@@ -14,7 +14,7 @@ echo [1/7] Проверяю Node.js...
 where node >nul 2>nul
 if errorlevel 1 (
   echo   ОШИБКА: Node.js не найден!
-  echo   Скачай и установи: https://nodejs.org/  (LTS версия)
+  echo   Скачай и установи: https://nodejs.org/  LTS версия
   echo   После установки запусти этот скрипт снова.
   pause
   exit /b 1
@@ -24,7 +24,7 @@ echo   Node.js !NODEV! — OK
 
 where npm >nul 2>nul
 if errorlevel 1 (
-  echo   ОШИБКА: npm не найден (идёт в комплекте с Node.js).
+  echo   ОШИБКА: npm не найден идёт в комплекте с Node.js.
   pause
   exit /b 1
 )
@@ -39,15 +39,15 @@ if not defined PYEXE (
 if not defined PYEXE (
   echo   ОШИБКА: Python не найден!
   echo   Скачай и установи: https://www.python.org/downloads/
-  echo   ВАЖНО: при установке поставь галочку "Add python.exe to PATH".
+  echo   ВАЖНО: при установке поставь галочку «Add python.exe to PATH».
   pause
   exit /b 1
 )
-for /f "tokens=1-2" %%v in ('!PYEXE! --version') do set PYV=%%v
+for /f "tokens=2" %%v in ('!PYEXE! --version') do set PYV=%%v
 echo   Python !PYV! — OK
 
 REM ---------- 3. npm install ----------
-echo [3/7] Устанавливаю зависимости (npm install)...
+echo [3/7] Устанавливаю зависимости npm install...
 call npm install
 if errorlevel 1 (
   echo   ОШИБКА: npm install завершился с ошибкой. Проверь интернет и Node.js.
@@ -63,7 +63,7 @@ set GDIR=models\gigaam\sherpa-onnx-nemo-ctc-punct-giga-am-v3-russian-2025-12-16
 if exist "%GDIR%\model.int8.onnx" (
   echo   GigaAM STT уже скачана — пропускаю.
 ) else (
-  echo   Скачиваю GigaAM STT (~225 МБ, может занять время)...
+  echo   Скачиваю GigaAM STT около 225 МБ, может занять время...
   if not exist "%GDIR%" mkdir "%GDIR%"
   curl.exe -fSL --retry 3 -o "%GDIR%\model.int8.onnx" "https://huggingface.co/csukuangfj/sherpa-onnx-nemo-ctc-punct-giga-am-v3-russian-2025-12-16/resolve/main/model.int8.onnx"
   if errorlevel 1 (
@@ -115,7 +115,7 @@ if exist models\*.gguf (
   echo   GGUF-модель уже есть — пропускаю.
 ) else (
   echo   GGUF-модель не найдена. Без неё голосовой ИИ работать не будет,
-  echo   но облачные провайдеры ^(Pollinations/OpenAI/Gemini^) работают и так.
+  echo   но облачные провайдеры Pollinations/OpenAI/Gemini работают и так.
   echo.
   set /p DLQ="   Скачать Qwen3-4B-Instruct (~2.5 ГБ) сейчас? [y/N]: "
   if /i "!DLQ!"=="y" (
