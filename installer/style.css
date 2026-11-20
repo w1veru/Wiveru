@@ -146,3 +146,19 @@ html, body {
 
 ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-thumb { background: rgba(168,85,247,0.3); border-radius: 3px; }
+
+.opt {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.65);
+  cursor: pointer;
+}
+
+.opt input {
+  accent-color: #a855f7;
+  width: 15px;
+  height: 15px;
+  cursor: pointer;
+}

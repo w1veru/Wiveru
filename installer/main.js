@@ -71,7 +71,7 @@ async function step(name, fn) {
   return true;
 }
 
-async function runSetup() {
+async function runSetup(opts = {}) {
   try {
     // 1. env
     const hasNode = await which('node');
@@ -141,6 +141,26 @@ async function runSetup() {
       return true;
     });
 
+    // 6. optional GGUF
+    const hasGguf = fs.readdirSync(path.join(TARGET, 'models')).some((f) => f.toLowerCase().endsWith('.gguf'));
+    if (opts.gguf && !hasGguf) {
+      await step('Скачивание Qwen3-4B (~2.5 ГБ)', async () => {
+        const dest = path.join(TARGET, 'models', 'Qwen3-4B-Instruct-2507-Q4_K_M.gguf');
+        send('progress', { step: 'Qwen3-4B GGUF', pct: 0 });
+        try {
+          await download('https://huggingface.co/Qwen/Qwen3-4B-Instruct-2507-GGUF/resolve/main/Qwen3-4B-Instruct-2507-Q4_K_M.gguf', dest,
+            (f) => send('progress', { step: 'Qwen3-4B GGUF', pct: Math.round(f * 100) }));
+          return true;
+        } catch (e) {
+          log('  ошибка GGUF (не критично): ' + e.message);
+          try { fs.unlinkSync(dest); } catch {}
+          return true; // не фейлим установку
+        }
+      });
+    } else if (opts.gguf) {
+      log('✔ GGUF-модель уже есть');
+    }
+
     log('============================================');
     log('Установка завершена! Запустите Wiveru.');
     send('done', { ok: true });
@@ -150,7 +170,7 @@ async function runSetup() {
   }
 }
 
-ipcMain.handle('start-setup', async () => { runSetup(); return true; });
+ipcMain.handle('start-setup', async (e, opts) => { runSetup(opts || {}); return true; });
 
 app.whenReady().then(() => {
   win = new BrowserWindow({

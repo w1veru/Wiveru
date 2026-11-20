@@ -50,7 +50,8 @@ startBtn.addEventListener('click', () => {
   logEl.innerHTML = '';
   done = 0;
   fill.style.width = '0%';
-  ipcRenderer.invoke('start-setup');
+  const gguf = document.getElementById('opt-gguf').checked;
+  ipcRenderer.invoke('start-setup', { gguf });
 });
 
 closeBtn.addEventListener('click', () => window.close());
