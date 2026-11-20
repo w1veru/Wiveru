@@ -75,20 +75,21 @@ async function runSetup() {
   try {
     // 1. env
     const hasNode = await which('node');
+    const hasNpm = await which('npm');
     const hasPy = (await which('python')) || (await which('py'));
-    if (!hasNode || !hasPy) {
-      log('✖ Не найдено: ' + [!hasNode && 'Node.js', !hasPy && 'Python'].filter(Boolean).join(', '));
+    if (!hasNode || !hasNpm || !hasPy) {
+      log('✖ Не найдено: ' + [!hasNode && 'Node.js', !hasNpm && 'npm', !hasPy && 'Python'].filter(Boolean).join(', '));
       log('  Node.js: https://nodejs.org/');
       log('  Python: https://www.python.org/downloads/ (галочка Add to PATH)');
       send('done', { ok: false });
       return;
     }
-    log('✔ Node.js и Python найдены');
+    log('✔ Node.js, npm и Python найдены');
 
     // 2. npm install
     await step('npm install', async () => {
       send('progress', { step: 'npm install', pct: -1 });
-      const r = await run('npm.cmd', ['install'], { cwd: TARGET });
+      const r = await run('npm', ['install'], { shell: true });
       if (r.code !== 0) { log(r.out.slice(-2000)); return false; }
       return true;
     });
