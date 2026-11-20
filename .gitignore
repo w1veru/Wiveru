@@ -11,3 +11,4 @@ shot-expanded.png
 .tmp/
 .stt-tmp/
 *.wav
+setup-dist/

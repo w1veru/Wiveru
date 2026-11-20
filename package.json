@@ -1,10 +1,12 @@
 {
   "name": "wiveru",
   "version": "1.0.0",
-  "description": "Dynamic Island — Wiveru",
+  "description": "Dynamic Island \u0432\u0402\u201d Wiveru",
   "main": "main.js",
   "scripts": {
-    "start": "electron ."
+    "start": "electron .",
+    "installer": "electron installer",
+    "build-setup": "setup-build.bat"
   },
   "devDependencies": {
     "electron": "^31.7.6"

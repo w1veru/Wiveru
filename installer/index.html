@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'">
+  <link rel="stylesheet" href="style.css">
+  <title>Wiveru Setup</title>
+</head>
+<body>
+  <div class="glow"></div>
+  <div class="card">
+    <div class="title">
+      <span class="dot"></span> Wiveru <span class="sub">Setup</span>
+    </div>
+
+    <div class="progress-wrap">
+      <div class="progress-bar"><div id="progress-fill"></div></div>
+      <div id="progress-label" class="progress-label">Готов к установке</div>
+    </div>
+
+    <div id="log" class="log"></div>
+
+    <div class="actions">
+      <button id="start-btn" class="btn primary">Начать установку</button>
+      <button id="close-btn" class="btn dim">Закрыть</button>
+    </div>
+  </div>
+  <script src="renderer.js"></script>
+</body>
+</html>
