@@ -10,6 +10,10 @@
     "electron": "^31.7.6"
   },
   "dependencies": {
-    "now-playing-media": "^0.2.0"
+    "node-llama-cpp": "^3.22.3",
+    "now-playing-media": "^0.2.0",
+    "sherpa-onnx": "^2.0.2",
+    "sudo-prompt": "^9.2.1",
+    "systeminformation": "^5.33.23"
   }
 }

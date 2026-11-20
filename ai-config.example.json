@@ -1,0 +1,7 @@
+{
+  "geminiApiKey": "",
+  "baseUrl": "https://text.pollinations.ai/openai",
+  "apiKey": "",
+  "model": "openai",
+  "sttApiKey": ""
+}

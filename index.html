@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self'; script-src 'self'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self'; script-src 'self'; media-src 'self' data: blob:; img-src 'self' https: data:">
   <title>Wiveru</title>
   <link rel="stylesheet" href="style.css">
 </head>
@@ -18,25 +18,174 @@
       <!-- Развернутое состояние -->
       <div id="expanded" class="expanded">
         <div class="icon-row">
-          <div class="icon-tile"></div>
-          <div class="icon-tile"></div>
-          <div class="icon-tile"></div>
+          <button class="icon-tile zapret-tile" id="zapret-btn" title="Zapret — DPI bypass">
+            <span id="zapret-status" class="zapret-status off"><img class="zimg z-closed" src="assets/btn/lock-keyhole.png" alt=""><img class="zimg z-open" src="assets/btn/lock-keyhole-open.png" alt=""></span>
+          </button>
+          <button class="icon-tile ai-tile" id="ai-btn" title="Локальный ИИ"><img src="assets/btn/brain.png" alt="AI"></button>
+          <button class="icon-tile load-tile" id="load-btn" title="Нагрузка ПК"><img src="assets/btn/chart-column.png" alt="CPU"></button>
+          <button class="icon-tile clip-tile" id="clip-btn" title="Буфер обмена"><img src="assets/btn/clipboard-list.png" alt="BUF"></button>
+          <button class="icon-tile translate-tile" id="translate-btn" title="Переводчик"><img src="assets/btn/languages.png" alt="Переводчик"></button>
+          <button class="icon-tile settings-tile" id="settings-btn" title="Настройки">⚙</button>
+        </div>
+        <div class="power-row">
+          <span id="battery-info">Питание: …</span>
         </div>
         <div class="main-row">
-          <div id="big-time">--:--</div>
+          <div class="clock">
+            <div id="big-time">--:--</div>
+            <div id="clock-sub" class="clock-sub"></div>
+          </div>
           <div class="media">
-            <div class="media-title">Нет трека</div>
-            <div class="media-sub">media</div>
+            <div class="media-art-wrap">
+              <img id="media-art" class="media-art" alt="">
+              <div id="media-art-ph" class="media-art-ph">♪</div>
+            </div>
+            <div class="media-title-clip" id="media-title-clip">
+              <div class="media-title-track" id="media-title-track">
+                <span id="media-title-a"></span><span id="media-title-b"></span>
+              </div>
+            </div>
             <div class="media-controls">
-              <button class="media-btn" data-cmd="previous" title="Предыдущий">⏮</button>
-              <button class="media-btn" id="play-pause" data-cmd="toggle" title="Пауза/Пуск">▶</button>
-              <button class="media-btn" data-cmd="next" title="Следующий">⏭</button>
+              <button class="media-btn" data-cmd="previous" title="Предыдущий"><img src="assets/btn/chevrons-left.png" alt=""></button>
+              <button class="media-btn" id="play-pause" data-cmd="toggle" title="Пауза/Пуск"><img id="pp-icon" src="assets/btn/play.png" alt=""></button>
+              <button class="media-btn" data-cmd="next" title="Следующий"><img src="assets/btn/chevrons-right.png" alt=""></button>
             </div>
           </div>
         </div>
+        <div id="device-info" class="device-row">Устройства: …</div>
         <div id="uptime">ПК работает: 0 ч 0 мин</div>
         <div class="brand">Wiveru</div>
+
+        <div id="chat-panel" class="chat-panel">
+          <button id="chat-back" class="back-btn" title="Назад"><img src="assets/btn/arrow-left.png" alt=""></button>
+          <div class="load-title chat-title">Wiveru AI</div>
+          <button id="chat-clear" title="Очистить историю">🗑</button>
+          <div id="chat-log"></div>
+          <div class="chat-status" id="chat-status"></div>
+          <div class="chat-input-row">
+            <input id="chat-input" type="text" placeholder="Спросить ИИ…" autocomplete="off">
+            <button id="chat-send">➤</button>
+          </div>
+        </div>
+
+        <div id="load-panel" class="load-panel">
+          <button id="load-back" class="back-btn" title="Назад"><img src="assets/btn/arrow-left.png" alt=""></button>
+          <div class="load-title">Нагрузка</div>
+          <div class="load-row">
+            <span class="load-label">CPU</span>
+            <div class="load-track"><div id="load-cpu-fill" class="load-fill"></div></div>
+            <span id="load-cpu-val" class="load-val">—</span>
+          </div>
+          <div class="load-row">
+            <span class="load-label">GPU</span>
+            <div class="load-track"><div id="load-gpu-fill" class="load-fill"></div></div>
+            <span id="load-gpu-val" class="load-val">—</span>
+          </div>
+          <div class="load-row">
+            <span class="load-label">RAM</span>
+            <div class="load-track"><div id="load-ram-fill" class="load-fill"></div></div>
+            <span id="load-ram-val" class="load-val">—</span>
+          </div>
+          <div id="load-gpu-info" class="load-gpu-info"></div>
+        </div>
+
+        <div id="clip-panel" class="clip-panel">
+          <button id="clip-back" class="back-btn" title="Назад"><img src="assets/btn/arrow-left.png" alt=""></button>
+          <div class="load-title">Буфер обмена</div>
+          <div id="clip-list" class="clip-list"></div>
+        </div>
+
+        <div id="translate-panel" class="translate-panel">
+          <button id="translate-back" class="back-btn" title="Назад"><img src="assets/btn/arrow-left.png" alt=""></button>
+          <div class="load-title">Переводчик</div>
+          <div class="tr-cols">
+            <div class="tr-col">
+              <select id="tr-src" class="tr-select">
+                <option value="ru">Русский</option>
+                <option value="en">Английский</option>
+                <option value="de">Немецкий</option>
+                <option value="fr">Французский</option>
+                <option value="es">Испанский</option>
+                <option value="it">Итальянский</option>
+                <option value="pt">Португальский</option>
+                <option value="pl">Польский</option>
+                <option value="uk">Украинский</option>
+                <option value="ja">Японский</option>
+                <option value="ko">Корейский</option>
+                <option value="zh-CN">Китайский</option>
+              </select>
+              <textarea id="tr-input" class="tr-input" placeholder="Введите текст…" rows="6" spellcheck="false"></textarea>
+            </div>
+            <button id="tr-swap" class="tr-swap" title="Поменять языки">⇄</button>
+            <div class="tr-col">
+              <select id="tr-lang" class="tr-select">
+                <option value="en">Английский</option>
+                <option value="ru">Русский</option>
+                <option value="de">Немецкий</option>
+                <option value="fr">Французский</option>
+                <option value="es">Испанский</option>
+                <option value="it">Итальянский</option>
+                <option value="pt">Португальский</option>
+                <option value="pl">Польский</option>
+                <option value="uk">Украинский</option>
+                <option value="ja">Японский</option>
+                <option value="ko">Корейский</option>
+                <option value="zh-CN">Китайский</option>
+              </select>
+              <div id="tr-result" class="tr-result"></div>
+            </div>
+          </div>
+          <div class="tr-actions">
+            <button id="tr-copy" class="tr-btn dim">Скопировать результат</button>
+          </div>
+        </div>
+
+        <div id="settings-panel" class="settings-panel">
+          <div class="set-title">Настройки</div>
+          <div class="set-scroll">
+          <label class="set-check">
+            <input type="checkbox" id="voice-check">
+            Голосовой помощник (слушает «виверу»)
+          </label>
+          <label class="set-check">
+            <input type="checkbox" id="wave-check" checked>
+            Волны под островом при музыке
+          </label>
+          <label class="set-label" for="mic-select">Микрофон</label>
+          <select id="mic-select" class="set-input"></select>
+          <label class="set-label" for="zapret-path">Путь к general.bat (Zapret)</label>
+          <input id="zapret-path" class="set-input" type="text" placeholder="Автопоиск — оставьте пустым" autocomplete="off">
+          <div class="set-grid">
+            <div class="set-field">
+              <label class="set-label" for="ai-base">AI Base URL</label>
+              <input id="ai-base" class="set-input" type="text" placeholder="https://text.pollinations.ai/openai" autocomplete="off">
+            </div>
+            <div class="set-field">
+              <label class="set-label" for="ai-key">AI API ключ</label>
+              <div class="set-pass">
+                <input id="ai-key" class="set-input" type="password" placeholder="не нужен для Pollinations" autocomplete="off">
+                <button id="ai-key-eye" class="set-eye" type="button" title="Показать">👁</button>
+              </div>
+            </div>
+            <div class="set-field set-field-wide">
+              <label class="set-label" for="ai-model">Модель</label>
+              <input id="ai-model" class="set-input" type="text" placeholder="openai" autocomplete="off">
+            </div>
+          </div>
+          <label class="set-check">
+            <input type="checkbox" id="autostart-check">
+            Автозапуск с правами администратора
+          </label>
+          </div>
+          <div class="set-actions">
+            <button id="zapret-save" class="set-btn">Сохранить</button>
+            <button id="settings-close" class="set-btn dim">✕</button>
+          </div>
+          <div id="set-status" class="set-status"></div>
+        </div>
+
       </div>
+      <canvas id="island-wave" class="island-wave" width="600" height="46"></canvas>
     </div>
   </div>
   <script src="script.js"></script>

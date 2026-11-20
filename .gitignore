@@ -1,2 +1,13 @@
 node_modules/
+models/
+stt-venv/
+hf-cache/
+zapret/
+settings.json
+ai-config.json
+zapret.log
+*.log
 shot-expanded.png
+.tmp/
+.stt-tmp/
+*.wav
