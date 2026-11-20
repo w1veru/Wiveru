@@ -22,10 +22,10 @@ Dynamic Island для Windows в стиле «пилюли» — всегда в
 </p>
 
 <p align="center">
-  <img src="docs/screenshot-panels.png" alt="Wiveru — панели" width="560">
+  <img src="docs/screenshot-translate.png" alt="Wiveru — переводчик" width="560">
 </p>
 
-> Скриншоты — плейсхолдеры: положи свои PNG/JPG в `docs/` с именами `screenshot-main.png`, `screenshot-expanded.png`, `screenshot-panels.png`.
+> В `docs/` также есть `screenshot-ai.png`, `screenshot-load.png`, `screenshot-clip.png`, `screenshot-settings.png`.
 
 ## Установка
 
