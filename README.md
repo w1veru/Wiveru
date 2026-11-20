@@ -83,7 +83,7 @@ copy settings.example.json settings.json
 
 ### 5. Zapret (отдельно)
 
-Zapret в репозиторий **не входит** — у каждого свой путь и версия. Скачай [zapret](https://github.com/bol-van/zapret) отдельно, укажи путь к `general.bat` в настройках острова (⚙ → «Путь к general.bat»).
+Zapret в репозиторий **не входит** — у каждого свой путь и версия. Скачай [zapret-discord-youtube](https://github.com/flowseal/zapret-discord-youtube) отдельно, укажи путь к `general.bat` в настройках острова (⚙ → «Путь к general.bat»).
 
 ### 6. Запуск
 
