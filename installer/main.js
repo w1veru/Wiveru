@@ -105,10 +105,16 @@ function download(url, dest, onProgress) {
   return new Promise((resolve, reject) => {
     const get = url.startsWith('https') ? https : http;
     const doGet = (u, redirects = 0) => {
-      const req = get.get(u, { timeout: 30000 }, (res) => {
+      let parsed;
+      try { parsed = new URL(u); } catch { return reject(new Error('Invalid URL: ' + u)); }
+      const getter = parsed.protocol === 'https:' ? https : http;
+      const req = getter.get(parsed, { timeout: 30000 }, (res) => {
         if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location && redirects < 5) {
           res.resume();
-          return doGet(res.headers.location, redirects + 1);
+          let next;
+          try { next = new URL(res.headers.location, parsed).href; }
+          catch { return reject(new Error('bad redirect: ' + res.headers.location)); }
+          return doGet(next, redirects + 1);
         }
         if (res.statusCode !== 200) { res.resume(); return reject(new Error('HTTP ' + res.statusCode)); }
         const total = parseInt(res.headers['content-length'] || '0', 10);
