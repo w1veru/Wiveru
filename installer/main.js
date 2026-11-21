@@ -33,6 +33,28 @@ function which(exe) {
   });
 }
 
+function runVer(cmd) {
+  return new Promise((resolve) => {
+    execFile(cmd, ['--version'], { timeout: 8000 }, (err, stdout) => resolve(!err && /\d/.test(stdout || '')));
+  });
+}
+
+function findFile(dir, names) {
+  try {
+    for (const n of names) {
+      const p = path.join(dir, n);
+      if (fs.existsSync(p)) return p;
+    }
+  } catch {}
+  return null;
+}
+
+function globDirs(base, pattern) {
+  try {
+    return fs.readdirSync(base).filter((d) => d.startsWith(pattern)).map((d) => path.join(base, d));
+  } catch { return []; }
+}
+
 function download(url, dest, onProgress) {
   return new Promise((resolve, reject) => {
     const get = url.startsWith('https') ? https : http;
@@ -73,18 +95,67 @@ async function step(name, fn) {
 
 async function runSetup(opts = {}) {
   try {
-    // 1. env
-    const hasNode = await which('node');
-    const hasNpm = await which('npm');
-    const hasPy = (await which('python')) || (await which('py'));
+    // 1. env — ищем и в PATH, и в стандартных папках установки
+    const extraPath = [];
+    let hasNode = await which('node');
+    let nodeDir = null;
+    if (!hasNode) {
+      const candidates = [
+        'C:\\Program Files\\nodejs',
+        process.env['ProgramFiles'] && path.join(process.env['ProgramFiles'], 'nodejs'),
+        process.env['ProgramFiles(x86)'] && path.join(process.env['ProgramFiles(x86)'], 'nodejs'),
+        process.env.LOCALAPPDATA && path.join(process.env.LOCALAPPDATA, 'Programs', 'nodejs')
+      ].filter(Boolean);
+      for (const d of candidates) {
+        if (findFile(d, ['node.exe'])) { nodeDir = d; hasNode = true; break; }
+      }
+    }
+    if (hasNode && !nodeDir) {
+      // node в PATH — npm обычно рядом, но проверим
+      nodeDir = null;
+    }
+    if (nodeDir) extraPath.push(nodeDir);
+
+    let hasNpm = await which('npm');
+    if (!hasNpm && nodeDir && findFile(nodeDir, ['npm.cmd'])) hasNpm = true;
+
+    // python: where может найти заглушку Microsoft Store — проверяем реальный запуск
+    let pyExe = null;
+    for (const c of ['python', 'py']) {
+      if (await which(c) && await runVer(c)) { pyExe = c; break; }
+    }
+    let pyDir = null;
+    if (!pyExe) {
+      const bases = [
+        process.env.LOCALAPPDATA && path.join(process.env.LOCALAPPDATA, 'Programs', 'Python'),
+        'C:\\Python3', 'C:\\Python314', 'C:\\Python313', 'C:\\Python312', 'C:\\Python311', 'C:\\Python310'
+      ].filter(Boolean);
+      const dirs = [];
+      for (const b of bases) {
+        try { if (fs.statSync(b).isDirectory()) dirs.push(b); } catch {}
+        dirs.push(...globDirs(b, 'Python3'));
+      }
+      for (const d of dirs) {
+        const p = findFile(d, ['python.exe']);
+        if (p && await runVer(p)) { pyExe = p; pyDir = d; break; }
+      }
+    }
+    const hasPy = !!pyExe;
+    if (pyDir) extraPath.push(pyDir);
+
     if (!hasNode || !hasNpm || !hasPy) {
       log('✖ Не найдено: ' + [!hasNode && 'Node.js', !hasNpm && 'npm', !hasPy && 'Python'].filter(Boolean).join(', '));
-      log('  Node.js: https://nodejs.org/');
-      log('  Python: https://www.python.org/downloads/ (галочка Add to PATH)');
+      log('  Node.js: https://nodejs.org/  (при установке оставь галочку PATH)');
+      log('  Python: https://www.python.org/downloads/  (галочка Add python.exe to PATH)');
       send('done', { ok: false });
       return;
     }
-    log('✔ Node.js, npm и Python найдены');
+    if (extraPath.length) {
+      process.env.PATH = extraPath.join(';') + ';' + process.env.PATH;
+      log('✔ Node.js, npm и Python найдены' + (extraPath.length ? ' (в стандартных папках, добавлены в PATH)' : ''));
+    } else {
+      log('✔ Node.js, npm и Python найдены');
+    }
 
     // 2. npm install
     await step('npm install', async () => {
@@ -123,7 +194,7 @@ async function runSetup(opts = {}) {
     const venvPy = path.join(TARGET, 'stt-venv', 'Scripts', 'python.exe');
     await step('Python venv + sherpa-onnx', async () => {
       if (!fs.existsSync(venvPy)) {
-        const py = (await which('python')) ? 'python' : 'py';
+        const py = pyExe || 'python';
         const r = await run(py, ['-m', 'venv', 'stt-venv']);
         if (r.code !== 0) { log(r.out.slice(-1000)); return false; }
       }

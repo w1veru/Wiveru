@@ -333,6 +333,7 @@ async function transcribeAudio(base64, mime) {
 let sttProc = null;
 let sttReady = null;
 let sttSeq = 0;
+let fgProc = null;
 const sttPending = new Map();
 
 function ensureSttServer() {
@@ -607,6 +608,30 @@ function createWindow() {
     const b = win.getBounds();
     win.webContents.send('cursor-pos', { x: p.x - b.x, y: p.y - b.y });
   }, 80);
+
+  // авто-скрытие острова при полноэкранном приложении (игры и т.п.)
+  try {
+    fgProc = spawn('powershell', ['-NoProfile','-WindowStyle','Hidden','-ExecutionPolicy','Bypass','-File', path.join(app.getAppPath(), 'fg-watch.ps1')], { stdio: ['ignore','pipe','ignore'] });
+    let fgBuf = '';
+    const dsize = screen.getPrimaryDisplay().size;
+    fgProc.stdout.on('data', (d) => {
+      fgBuf += d.toString('utf8');
+      let i;
+      while ((i = fgBuf.indexOf('\n')) >= 0) {
+        const line = fgBuf.slice(0, i).trim();
+        fgBuf = fgBuf.slice(i + 1);
+        const parts = line.split('|');
+        if (parts.length < 6 || !win || win.isDestroyed()) continue;
+        const fw = +parts[3], fh = +parts[4];
+        const st = parseInt(parts[5]) | 0;
+        const hasCaption = (st & 0x00C00000) !== 0; // WS_CAPTION — обычное окно с заголовком
+        const full = fw >= dsize.width * 0.95 && fh >= dsize.height * 0.95 && !hasCaption;
+        if (full && win.isVisible()) win.hide();
+        else if (!full && !win.isVisible()) win.show();
+      }
+    });
+    fgProc.on('exit', () => { fgProc = null; });
+  } catch {}
 }
 
 ipcMain.on('mouse-guard', (event, on) => {
@@ -1297,4 +1322,5 @@ app.on('will-quit', () => {
   globalShortcut.unregisterAll();
   try { if (sttProc) sttProc.kill(); } catch {}
   try { if (volDuckProc) volDuckProc.kill(); } catch {}
+  try { if (fgProc) fgProc.kill(); } catch {}
 });
