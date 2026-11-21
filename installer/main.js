@@ -219,7 +219,7 @@ async function runSetup(opts = {}) {
         const dest = path.join(TARGET, 'models', 'Qwen3-4B-Instruct-2507-Q4_K_M.gguf');
         send('progress', { step: 'Qwen3-4B GGUF', pct: 0 });
         try {
-          await download('https://huggingface.co/Qwen/Qwen3-4B-Instruct-2507-GGUF/resolve/main/Qwen3-4B-Instruct-2507-Q4_K_M.gguf', dest,
+          await download('https://huggingface.co/lmstudio-community/Qwen3-4B-Instruct-2507-GGUF/resolve/main/Qwen3-4B-Instruct-2507-Q4_K_M.gguf', dest,
             (f) => send('progress', { step: 'Qwen3-4B GGUF', pct: Math.round(f * 100) }));
           return true;
         } catch (e) {

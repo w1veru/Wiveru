@@ -120,7 +120,7 @@ if exist models\*.gguf (
   set /p DLQ="   Скачать Qwen3-4B-Instruct (~2.5 ГБ) сейчас? [y/N]: "
   if /i "!DLQ!"=="y" (
     echo   Скачиваю Qwen3-4B Q4_K_M...
-    curl.exe -fSL --retry 3 -o "models\Qwen3-4B-Instruct-2507-Q4_K_M.gguf" "https://huggingface.co/Qwen/Qwen3-4B-Instruct-2507-GGUF/resolve/main/Qwen3-4B-Instruct-2507-Q4_K_M.gguf"
+    curl.exe -fSL --retry 3 -o "models\Qwen3-4B-Instruct-2507-Q4_K_M.gguf" "https://huggingface.co/lmstudio-community/Qwen3-4B-Instruct-2507-GGUF/resolve/main/Qwen3-4B-Instruct-2507-Q4_K_M.gguf"
     if errorlevel 1 (
       echo   ОШИБКА: не удалось скачать GGUF. Скачай вручную с HuggingFace в папку models\
     ) else (
