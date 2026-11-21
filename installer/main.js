@@ -4,12 +4,17 @@ const fs = require('fs');
 const https = require('https');
 const http = require('http');
 const { execFile, spawn } = require('child_process');
+const os = require('os');
 
 const isDev = !app.isPackaged;
 // распакованный запуск: repo/installer -> repo; exe в корне репо -> его папка
 const TARGET = isDev ? path.resolve(__dirname, '..') : path.dirname(process.execPath);
 const GIGA_DIR = 'sherpa-onnx-nemo-ctc-punct-giga-am-v3-russian-2025-12-16';
 const GIGA_BASE = 'https://huggingface.co/csukuangfj/' + GIGA_DIR + '/resolve/main/';
+const RUNTIME = path.join(process.env.LOCALAPPDATA || os.tmpdir(), 'Wiveru', 'runtime');
+const NODE_ZIP_URL = 'https://nodejs.org/dist/v26.13.1/node-v26.13.1-win-x64.zip';
+const NODE_DIRNAME = 'node-v26.13.1-win-x64';
+const GIT_SFX_URL = 'https://github.com/git-for-windows/git/releases/download/v2.56.1.windows.1/PortableGit-2.56.1-64-bit.7z.exe';
 
 let win = null;
 const send = (ch, data) => { if (win && !win.isDestroyed()) win.webContents.send(ch, data); };
@@ -95,10 +100,38 @@ async function step(name, fn) {
 
 async function runSetup(opts = {}) {
   try {
-    // 1. env — ищем и в PATH, и в стандартных папках установки
+    // 1. env — ищем и в PATH, и в стандартных папках; Node можно доустановить сами
     const extraPath = [];
     let hasNode = await which('node');
     let nodeDir = null;
+
+    // авто-установка Node.js portable zip, если не найден нигде
+    if (!hasNode) {
+      const r = await step('Установка Node.js', async () => {
+        const dir = path.join(RUNTIME, 'node');
+        const marker = path.join(dir, NODE_DIRNAME, 'node.exe');
+        if (!fs.existsSync(marker)) {
+          fs.mkdirSync(dir, { recursive: true });
+          const tmp = path.join(os.tmpdir(), 'wiveru-node.zip');
+          send('progress', { step: 'Node.js zip', pct: 0 });
+          try {
+            await download(NODE_ZIP_URL, tmp, (f) => send('progress', { step: 'Node.js zip', pct: Math.round(f * 100) }));
+            const ex = await run('tar.exe', ['-xf', tmp, '-C', dir]);
+            try { fs.unlinkSync(tmp); } catch {}
+            if (ex.code !== 0 || !fs.existsSync(marker)) { log('  ошибка распаковки node'); return false; }
+          } catch (e) {
+            log('  ошибка скачивания Node.js: ' + e.message);
+            return false;
+          }
+        }
+        process.env.PATH = path.join(dir, NODE_DIRNAME) + ';' + process.env.PATH;
+        return fs.existsSync(marker);
+      });
+      if (r) {
+        hasNode = true;
+        nodeDir = path.join(RUNTIME, 'node', NODE_DIRNAME);
+      }
+    }
     if (!hasNode) {
       const candidates = [
         'C:\\Program Files\\nodejs',
@@ -230,6 +263,35 @@ async function runSetup(opts = {}) {
       });
     } else if (opts.gguf) {
       log('✔ GGUF-модель уже есть');
+    }
+
+    // 7. Git (опционально, не блокирует установку)
+    const hasGit = await which('git');
+    if (!hasGit) {
+      await step('Установка Git (опционально)', async () => {
+        const dir = path.join(RUNTIME, 'git');
+        const marker = path.join(dir, 'cmd', 'git.exe');
+        if (!fs.existsSync(marker)) {
+          fs.mkdirSync(dir, { recursive: true });
+          const tmp = path.join(os.tmpdir(), 'wiveru-git.exe');
+          send('progress', { step: 'Git', pct: 0 });
+          try {
+            await download(GIT_SFX_URL, tmp, (f) => send('progress', { step: 'Git', pct: Math.round(f * 100) }));
+            // PortableGit — self-extracting 7z: тихая распаковка в dir
+            const ex = await run(tmp, ['-o' + dir, '-y']);
+            try { fs.unlinkSync(tmp); } catch {}
+            if (!fs.existsSync(marker)) { log('  Git не распаковался: ' + (ex.out || '').slice(-300)); return true; }
+          } catch (e) {
+            log('  ошибка Git (не критично): ' + e.message);
+            return true;
+          }
+        }
+        process.env.PATH = path.join(dir, 'cmd') + ';' + process.env.PATH;
+        log('✔ Git установлен в ' + dir);
+        return true;
+      });
+    } else {
+      log('✔ Git уже есть');
     }
 
     log('============================================');
