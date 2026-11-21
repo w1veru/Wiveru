@@ -8,13 +8,16 @@ const os = require('os');
 
 const isDev = !app.isPackaged;
 // распакованный запуск: repo/installer -> repo; exe в корне репо -> его папка
-const TARGET = isDev ? path.resolve(__dirname, '..') : path.dirname(process.execPath);
+let TARGET = isDev ? path.resolve(__dirname, '..') : path.dirname(process.execPath);
 const GIGA_DIR = 'sherpa-onnx-nemo-ctc-punct-giga-am-v3-russian-2025-12-16';
 const GIGA_BASE = 'https://huggingface.co/csukuangfj/' + GIGA_DIR + '/resolve/main/';
 const RUNTIME = path.join(process.env.LOCALAPPDATA || os.tmpdir(), 'Wiveru', 'runtime');
 const NODE_ZIP_URL = 'https://nodejs.org/dist/v26.13.1/node-v26.13.1-win-x64.zip';
 const NODE_DIRNAME = 'node-v26.13.1-win-x64';
 const GIT_SFX_URL = 'https://github.com/git-for-windows/git/releases/download/v2.56.1.windows.1/PortableGit-2.56.1-64-bit.7z.exe';
+const PY_URL = 'https://www.python.org/ftp/python/3.12.10/python-3.12.10-amd64.exe';
+const REPO_ZIP = 'https://github.com/w1veru/Wiveru/archive/refs/heads/master.zip';
+const APP_DIR = path.join(process.env.LOCALAPPDATA || os.tmpdir(), 'Programs', 'Wiveru');
 
 let win = null;
 const send = (ch, data) => { if (win && !win.isDestroyed()) win.webContents.send(ch, data); };
@@ -60,6 +63,44 @@ function globDirs(base, pattern) {
   } catch { return []; }
 }
 
+function appReady(dir) {
+  return fs.existsSync(path.join(dir, 'stt_server.py')) && fs.existsSync(path.join(dir, 'package.json'));
+}
+
+async function ensureAppDir() {
+  if (appReady(TARGET)) return;
+  await step('Загрузка Wiveru', async () => {
+    if (!appReady(APP_DIR)) {
+      const tmp = path.join(os.tmpdir(), 'wiveru-repo.zip');
+      const exDir = path.join(os.tmpdir(), 'wiveru-extract');
+      send('progress', { step: 'Wiveru repo', pct: 0 });
+      try {
+        await download(REPO_ZIP, tmp, (f) => send('progress', { step: 'Wiveru repo', pct: Math.round(f * 100) }));
+        fs.mkdirSync(exDir, { recursive: true });
+        const ex = await run('tar.exe', ['-xf', tmp, '-C', exDir]);
+        try { fs.unlinkSync(tmp); } catch {}
+        if (ex.code !== 0) { log('  ошибка распаковки: ' + (ex.out || '').slice(-300)); return false; }
+        const src = path.join(exDir, 'Wiveru-master');
+        fs.mkdirSync(path.dirname(APP_DIR), { recursive: true });
+        if (fs.existsSync(APP_DIR)) fs.rmSync(APP_DIR, { recursive: true, force: true });
+        try {
+          fs.renameSync(src, APP_DIR);
+        } catch {
+          fs.cpSync(src, APP_DIR, { recursive: true });
+        }
+        fs.rmSync(exDir, { recursive: true, force: true });
+        if (!appReady(APP_DIR)) { log('  не найден распакованный проект'); return false; }
+      } catch (e) {
+        log('  ошибка загрузки: ' + e.message);
+        return false;
+      }
+    }
+    TARGET = APP_DIR;
+    log('  проект: ' + TARGET);
+    return true;
+  });
+}
+
 function download(url, dest, onProgress) {
   return new Promise((resolve, reject) => {
     const get = url.startsWith('https') ? https : http;
@@ -100,7 +141,10 @@ async function step(name, fn) {
 
 async function runSetup(opts = {}) {
   try {
-    // 1. env — ищем и в PATH, и в стандартных папках; Node можно доустановить сами
+    // 0. если exe запущен не из папки проекта — скачать репозиторий в %LOCALAPPDATA%\Programs\Wiveru
+    await ensureAppDir();
+
+    // 1. env — ищем и в PATH, и в стандартных папках; Node/Python можно доустановить сами
     const extraPath = [];
     let hasNode = await which('node');
     let nodeDir = null;
@@ -153,12 +197,10 @@ async function runSetup(opts = {}) {
     if (!hasNpm && nodeDir && findFile(nodeDir, ['npm.cmd'])) hasNpm = true;
 
     // python: where может найти заглушку Microsoft Store — проверяем реальный запуск
-    let pyExe = null;
-    for (const c of ['python', 'py']) {
-      if (await which(c) && await runVer(c)) { pyExe = c; break; }
-    }
-    let pyDir = null;
-    if (!pyExe) {
+    async function detectPython() {
+      for (const c of ['python', 'py']) {
+        if (await which(c) && await runVer(c)) return { exe: c, dir: null };
+      }
       const bases = [
         process.env.LOCALAPPDATA && path.join(process.env.LOCALAPPDATA, 'Programs', 'Python'),
         'C:\\Python3', 'C:\\Python314', 'C:\\Python313', 'C:\\Python312', 'C:\\Python311', 'C:\\Python310'
@@ -170,14 +212,36 @@ async function runSetup(opts = {}) {
       }
       for (const d of dirs) {
         const p = findFile(d, ['python.exe']);
-        if (p && await runVer(p)) { pyExe = p; pyDir = d; break; }
+        if (p && await runVer(p)) return { exe: p, dir: d };
       }
+      return null;
     }
+
+    let py = await detectPython();
+    if (!py) {
+      await step('Установка Python 3.12', async () => {
+        const tmp = path.join(os.tmpdir(), 'wiveru-python.exe');
+        send('progress', { step: 'Python installer', pct: 0 });
+        try {
+          await download(PY_URL, tmp, (f) => send('progress', { step: 'Python installer', pct: Math.round(f * 100) }));
+          const r = await run(tmp, ['/quiet', 'InstallAllUsers=0', 'PrependPath=0', 'Include_pip=1', 'Include_test=0', 'AssociateFiles=0']);
+          try { fs.unlinkSync(tmp); } catch {}
+          if (r.code !== 0) log('  установщик вернул код ' + r.code + ' (продолжаем)');
+        } catch (e) {
+          log('  ошибка Python: ' + e.message);
+          return false;
+        }
+        return true;
+      });
+      py = await detectPython();
+    }
+    const pyExe = py && py.exe;
     const hasPy = !!pyExe;
-    if (pyDir) extraPath.push(pyDir);
+    if (py && py.dir && !extraPath.includes(py.dir)) extraPath.push(py.dir);
 
     if (!hasNode || !hasNpm || !hasPy) {
       log('✖ Не найдено: ' + [!hasNode && 'Node.js', !hasNpm && 'npm', !hasPy && 'Python'].filter(Boolean).join(', '));
+      log('  авто-установка не удалась. Вручную:');
       log('  Node.js: https://nodejs.org/  (при установке оставь галочку PATH)');
       log('  Python: https://www.python.org/downloads/  (галочка Add python.exe to PATH)');
       send('done', { ok: false });
@@ -294,8 +358,28 @@ async function runSetup(opts = {}) {
       log('✔ Git уже есть');
     }
 
+    // 8. ярлык на рабочем столе — запуск через electron.exe, консоль не нужна
+    await step('Ярлык Wiveru', async () => {
+      const electronExe = path.join(TARGET, 'node_modules', 'electron', 'dist', 'electron.exe');
+      if (!fs.existsSync(electronExe)) { log('  electron.exe не найден, ярлык пропущен'); return true; }
+      const ps = [
+        '$d = [Environment]::GetFolderPath("Desktop");',
+        '$ws = New-Object -ComObject WScript.Shell;',
+        '$s = $ws.CreateShortcut((Join-Path $d "Wiveru.lnk"));',
+        '$s.TargetPath = ' + JSON.stringify(electronExe) + ';',
+        '$s.Arguments = ' + JSON.stringify('"' + TARGET + '"') + ';',
+        '$s.WorkingDirectory = ' + JSON.stringify(TARGET) + ';',
+        '$s.Description = "Wiveru — голосовой ассистент";',
+        '$s.Save()'
+      ].join(' ');
+      const r = await run('powershell.exe', ['-NoProfile', '-Command', ps]);
+      if (r.code !== 0) { log('  не удалось создать ярлык: ' + (r.out || '').slice(-300)); return true; }
+      log('  ярлык создан на рабочем столе');
+      return true;
+    });
+
     log('============================================');
-    log('Установка завершена! Запустите Wiveru.');
+    log('Установка завершена! Wiveru — на рабочем столе.');
     send('done', { ok: true });
   } catch (e) {
     log('✖ ' + (e && e.message ? e.message : e));
